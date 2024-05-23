@@ -1,0 +1,62 @@
+@page "/file-upl"
+<PageTitle>Blazor File Upload</PageTitle>
+
+<h1>Blazor File Upload</h1>
+
+<div style='margin-botton: 20px; display: flex;'>
+  <div>Select your file:</div>
+  <InputFile OnChange="FileUploaded" />
+</div>
+
+<h2>Selected file</h2>
+<div>
+  <div>File name: @FileName</div>
+  <div>File size: @FileSize</div>
+  <div>File type: @FileType</div>
+  <div>Last modified: @LastModified</div>
+</div>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div>Error: @ErrorMessage</div>
+}
+
+@code {
+  public string FileName {get; set;} = "";
+  public long FileSize {get; set;}
+  public string FileType {get; set;} = "";
+  public DateTimeOffset LastModified {get; set;}
+  const int MAX_FILESIZE = 5000 * 1024; // 5 MB
+  public string ErrorMessage {get; set;} = "";
+
+  public async Task FileUploaded(InputFileChangeEventArgs e)
+  {
+      var browserFile = e.File;
+
+      if (browserFile != null)
+      {
+        FileSize = browserFile.Size;
+        FileType = browserFile.ContentType;
+        FileName = browserFile.Name;
+        LastModified = browserFile.LastModified;
+      }
+
+      try
+      {
+        var fileStream = browserFile!.OpenReadStream(MAX_FILESIZE);
+
+        var randomFile = Path.GetTempFileName();
+        var extension = Path.GetExtension(browserFile.Name);
+        var targetFilePath = Path.ChangeExtension(randomFile, extension);
+
+        var targetStream = new FileStream(targetFilePath, FileMode.Create);
+        await fileStream.CopyToAsync(targetStream);
+        targetStream.Close();
+      }
+      catch(Exception exception)
+      {
+          ErrorMessage = exception.Message;
+      }
+  }
+
+}

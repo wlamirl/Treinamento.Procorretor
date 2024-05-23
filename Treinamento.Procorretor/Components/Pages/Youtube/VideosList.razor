@@ -1,0 +1,146 @@
+@page "/playlist-youtube"
+@using static Treinamento.Procorretor.Domain.PlayListJson
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = "User, Admin")]
+
+@rendermode InteractiveServer
+
+@inject IDialogService _dialogService
+
+@if (playlist == null)
+{
+  <FluentProgressRing Style="width:30px;height:30px" />
+}
+else
+{
+  <FluentStack Style="margin-bottom: 24px;" HorizontalAlignment="HorizontalAlignment.Center">
+  <FluentLabel Typo="Typography.PageTitle" Alignment="HorizontalAlignment.Center" Color="Color.Accent">
+    Vídeos do Youtube
+  </FluentLabel>
+</FluentStack>
+  <FluentDivider></FluentDivider>
+  <br />
+  @* <div class="grid"> *@
+  <FluentStack HorizontalAlignment="HorizontalAlignment.Center">
+    <FluentGrid Spacing="1" Justify="JustifyContent.Center" AdaptiveRendering="true"
+      Style="background-color: var(--neutral-layer-3); overflow: hidden; resize: horizontal; padding: 4px;">
+
+      @foreach (var @sitem in @playlist!)
+      {
+        @foreach (var @snip in @sitem.snippets!)
+        {
+          <FluentGridItem xs="6" sm="4" Justify="JustifyContent.Center">
+            <FluentCard Width="350px" Height="250px" justify="JustifyContent.Center">
+              <div class="card" style='text-align: center; width:100%'>
+                @{
+                  var titulo = snip.title;
+                  if (titulo?.Length > 20)
+                  {
+                    titulo = titulo.Substring(0, 20);
+                  }
+                  var anchor = "https://youtu.be/" + @snip.resourceId?.videoId;
+                  emb = "http://www.youtube.com/embed/" + @snip.resourceId?.videoId;
+                  // var emb1 = "<iframe src=@emb frameborder='0'></iframe>";
+                }
+                <FluentLabel Typo="Typography.H4" Alignment="HorizontalAlignment.Center">@titulo</FluentLabel>
+              </div>
+              <div style='margin-top: 70px; text-align:center; width:100%'>
+                @* width:100%; display:block; margin-left:auto; margin-right:auto;'> *@
+                    @* <iframe src=@emb frameborder="0"></iframe> *@
+                <FluentAnchor Href="@emb" Appearance="Appearance.Stealth" Target="_blank">
+                  <img src='@snip.thumbnails?.Default?.url' style='width: 200px;' />
+                </FluentAnchor>
+              </div>          
+            </FluentCard>
+          </FluentGridItem>
+        }
+      }
+      @*<p>
+    <FluentGridItem Style="min-width: 200px;">
+    <div class='card'>
+    Total de itens no playlist: @totalResults
+    </div>
+    </FluentGridItem>
+    <FluentGridItem Style="min-width: 200px;">
+    <div class='card'>
+    Total de itens públicos no playlist: @count
+    </div>
+    </FluentGridItem>
+    </p> *@
+    </FluentGrid>
+  </FluentStack>
+  @* </div> *@
+  <br />
+  <div class="page-buttons">
+
+  @if (pagination.TotalItemCount.HasValue)
+    {
+      for (var pageIndex = 0; pageIndex <= pagination.LastPageIndex; pageIndex++)
+      {
+        var capturedIndex = pageIndex;
+        <FluentButton @onclick="@(() => GoToPageAsync(capturedIndex))" Appearance="@PageButtonAppearance(capturedIndex)"
+          aria-current="@AriaCurrentValue(capturedIndex)" aria-label="@AriaLabel(capturedIndex + 1)">
+          @(capturedIndex + 1)
+        </FluentButton>
+      }
+    }
+  </div>
+}
+
+@code {
+  private string emb { get; set; } = string.Empty;
+
+  private List<YoutubePlayList>? playlist { get; set; }
+  PaginationState pagination = new PaginationState { ItemsPerPage = 3 };
+  public int totalResults = 0;
+  public List<string> Videos = new();
+  private int count = 0;
+  protected override async Task OnInitializedAsync()
+  {
+    await Task.Delay(1000);
+    await CarregaVideos();
+    pagination.TotalItemCountChanged += (sender, eventArgs) => StateHasChanged();
+    await base.OnInitializedAsync();
+  }
+
+  private async Task CarregaVideos()
+  {
+    @* var result = await _youtubeService
+.GetVideosInPlayListAsync("PL285LgYq_FoKoxiqmUEgVX3_wFf1ioi3J")
+.Result;
+
+ShowResult(result); *@
+
+    var obj = await _youtubeService.GetVideosPlayListAsync();
+
+    playlist = JsonConvert.DeserializeObject<List<YoutubePlayList>>(obj)!;
+    @* var subitem = playlist.items; *@
+    var b = 0;
+  }
+
+  private void ShowResult(dynamic result)
+  {
+    count = result.items.Count;
+    totalResults = result.pageInfo.TotalResults;
+
+    if (count > 0)
+      foreach (var item in result.items)
+      {
+        Videos.Add(item.snipped.title);
+      }
+
+  }
+  private async Task GoToPageAsync(int pageIndex)
+  {
+    await pagination.SetCurrentPageIndexAsync(pageIndex);
+  }
+
+  private Appearance PageButtonAppearance(int pageIndex)
+  => pagination.CurrentPageIndex == pageIndex ? Appearance.Accent : Appearance.Neutral;
+
+  private string? AriaCurrentValue(int pageIndex)
+  => pagination.CurrentPageIndex == pageIndex ? "page" : null;
+
+  private string AriaLabel(int pageIndex) => $"Ir para pag. {pageIndex}";
+}

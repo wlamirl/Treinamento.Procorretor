@@ -1,0 +1,203 @@
+﻿@page "/Admin/video-form"
+@page "/Admin/video-form/{Id:int}"
+@using static Treinamento.Procorretor.Domain.YoutubeJson
+
+@using System 
+@using System.IO
+@using Microsoft.AspNetCore.Hosting
+
+@inject IWebHostEnvironment Environment
+@inject IConfiguration config
+
+@rendermode InteractiveServer
+
+<PageTitle>
+    @pageTitle
+</PageTitle>
+
+<FluentGrid Justify="@JustifyContent.Center">
+    <FluentGridItem>
+        <FluentCard>
+                <FluentLabel Alignment="HorizontalAlignment.Center">
+                    @pageTitle
+                </FluentLabel>
+
+            <EditForm Model="Vid">
+                <FluentTextField Appearance="FluentInputAppearance.Filled" 
+                                 Label="Título" @bind-Value="Vid!.Title" Style="width:100%" />
+                <FluentTextField Appearance="FluentInputAppearance.Filled" 
+                                 Label="Miniatura" Style="width:100%"  @bind-Value="Vid.Thumbnail" />
+                <FluentTextField Appearance="FluentInputAppearance.Filled"
+                                 Label="Descrição" Style="width:100%"  @bind-Value="Vid.Description" />
+                <FluentTextField Appearance="FluentInputAppearance.Filled"
+                                 Label="Tag" Style="width:100%"  @bind-Value="Vid.Tag" />
+                <FluentTextField Appearance="FluentInputAppearance.Filled"
+                                 Label="Categoria" Style="width:100%"  @bind-Value="Vid.CategoryId" />
+                <FluentInputFile @ref="@myFileByStream"
+                                AnchorId="MyUploadStream"
+                                DragDropZoneVisible="false"
+                                Mode="InputFileMode.Stream"
+                                Multiple="false"
+                                MaximumFileSize="@(20 * 1024 * 1024)"
+                                Accept=".mp4, .mov, .avi"
+                                OnFileUploaded="@OnFileUploadedAsync"
+                                OnCompleted="@OnCompleted" />
+
+                <FluentProgress Min="0" Max="100" Value="@progressPercent" Visible="@(progressPercent > 0)" />
+                <FluentLabel Alignment="HorizontalAlignment.Center">
+                    @progressTitle
+                </FluentLabel>
+
+                <FluentButton Appearance="Appearance.Accent" Id="MyUploadStream">
+                    Upload files
+                </FluentButton>
+                @* <FluentButton Appearance="Appearance.Accent" OnClick="()=>SaveVideo()" Id="MyUploadStream">
+                    @pageTitle
+                </FluentButton> *@
+
+                @if (Files.Any())
+                {
+                    <h4>File(s) uploaded:</h4>
+                    <ul>
+                        @foreach (var file in Files)
+                        {
+                            <li>
+                                @file
+                            </li>
+                        }
+                    </ul>
+                }
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div>Error: @ErrorMessage</div>
+                }
+                <FluentAnchor Href="/videos"> Cancela</FluentAnchor>
+            </EditForm>
+        </FluentCard>
+    </FluentGridItem>
+</FluentGrid>
+
+@code {
+
+    @* private long maxFileSize = 1024 * 15;
+    private int maxAllowedFiles = 3; *@
+
+    [Parameter]
+    public int? Id { get; set; } = -1;
+    private string pageTitle => Id != null ? "Edita Vídeo" : "Novo Vídeo";
+
+    [SupplyParameterFromForm]
+    public VideoModel? Vid { get; set; } = new VideoModel();
+    FluentInputFile? myFileByStream = default!;
+    int? progressPercent;
+    string? progressTitle;
+    private List<string> Files = new();
+    public string ErrorMessage {get; set;} = "";
+
+    async Task OnFileUploadedAsync(FluentInputFileEventArgs file)
+    {
+        try
+        {
+            progressPercent = file.ProgressPercent;
+            progressTitle = file.ProgressTitle;
+
+            string trustedFileName = Path.ChangeExtension(
+                Path.GetRandomFileName(),
+                Path.GetExtension(file.Name)
+            );
+            @* var path = Path.Combine(Environment.ContentRootPath,
+                Environment.EnvironmentName, "unsafe_uploads",
+                file.Name); *@
+
+            string path = Path.Combine(
+                Path.GetTempPath(),
+                "Storage",
+                "procorretor",
+                trustedFileName
+            );
+
+            Directory.CreateDirectory(Path.Combine(
+                Path.GetTempPath(),
+                "Storage",
+                "procorretor"
+            ));
+
+            Files.Add(path);                    
+
+            // Write to the FileStream
+            // See other samples: https://docs.microsoft.com/en-us/aspnet_upoloadVideo
+            await using FileStream fs = new(path, FileMode.Create);
+            await file.Stream!.CopyToAsync(fs);
+
+            @* //Covert to json 
+            var obj = new Root
+            {
+                title = Vid!.Title,
+                thumbnail = Vid!.Thumbnail,
+                tags = Vid!.Tag,
+                description = Vid!.Description,
+                urlVideo = Vid!.UrlVideo,
+                categoryId = "22",
+                privacyStatus = "unlisted",
+                filePath = path
+            }; 
+            var stringJson = JsonConvert.SerializeObject(obj);     *@
+
+            await _youtubeService.UploadVideo(Vid!.Title, Vid!.Description, 
+                Vid!.Tag, Vid!.CategoryId, path);     
+
+            await file.Stream!.DisposeAsync();
+            file.Stream.Close();
+
+            File.Delete(path);
+
+            Directory.Delete(Path.Combine(
+                Path.GetTempPath(),
+                "Storage",
+                "procorretor"
+            ));
+
+            ToastService.ShowInfo($"Retornando para lista de vídeos");
+            await Task.Delay(1500);
+            NavigationManager.NavigateTo("/videos");          
+        }
+        catch(Exception e)
+        {
+            ErrorMessage = e.Message;
+        }
+      
+    }
+
+    void OnCompleted(IEnumerable<FluentInputFileEventArgs> files)
+    {
+        progressPercent = myFileByStream!.ProgressPercent;
+        progressTitle = myFileByStream!.ProgressTitle;
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id is null)
+        {
+            Vid = new VideoModel();
+        }
+        else
+        {
+            Vid = await _videoService.GetVideo(Id);
+        }
+        await base.OnInitializedAsync();
+    }
+
+    private async Task SaveVideo()
+    {
+        if (Id != null)
+        {
+            await _videoService.UpdateVideo(Vid!);
+            DialogService.ShowSuccess($"Vídeo {Vid!.Title} atualizado com sucesso");
+        }
+        else
+        {
+            await _videoService.AddVideo(Vid!);
+            DialogService.ShowSuccess($"Vídeo {Vid!.Title} incluido com sucesso");
+        }
+    }
+}

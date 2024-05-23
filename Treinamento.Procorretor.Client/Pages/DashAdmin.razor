@@ -1,0 +1,12 @@
+@page "/dash"
+
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveAuto
+
+<PageTitle>Dashboard Admin</PageTitle>
+
+<AuthorizeView>
+    Hello @context.User.Identity?.Name!
+</AuthorizeView>
