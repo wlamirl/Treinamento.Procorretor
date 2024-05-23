@@ -26,9 +26,15 @@
                     <FluentNavLink Href="admin/videos" Icon="@(new Icons.Regular.Size20.Album())" IconColor="Color.Accent">
                         Gerenciar Vídeos
                     </FluentNavLink>
-                    @* <FluentNavLink Href="auth" Icon="@(new Icons.Regular.Size20.LockClosedKey())" IconColor="Color.Accent">
-                        Auth Required
-                    </FluentNavLink> *@
+                    <FluentNavLink Href="admin/attendance" Icon="@(new Icons.Regular.Size20.BinderTriangle())" IconColor="Color.Accent">
+                        Frequência do Aluno
+                    </FluentNavLink>
+                    <FluentNavLink Href="admin/chart" Icon="@(new Icons.Regular.Size20.ArrowTrendingLines())" IconColor="Color.Accent">
+                        Gráficos de Evolução
+                    </FluentNavLink>
+                    <FluentNavLink Href="admin/assessment" Icon="@(new Icons.Regular.Size20.Certificate())" IconColor="Color.Accent">
+                        Avaliações
+                    </FluentNavLink>
                     <FluentNavLink Href="Account/Manage">@context.User.Identity?.Name</FluentNavLink>
                     <form action="Account/Logout" method="post">
                         <AntiforgeryToken />
