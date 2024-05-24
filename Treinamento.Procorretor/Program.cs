@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FluentUI.AspNetCore.Components;
 
-using Treinamento.Procorretor.Client.Pages;
 using Treinamento.Procorretor.Components;
 using Treinamento.Procorretor.Components.Account;
 using Treinamento.Procorretor.Data;
