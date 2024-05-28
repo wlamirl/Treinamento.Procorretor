@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
+
+using Treinamento.Procorretor.Components.Account.Pages;
+using Treinamento.Procorretor.Components.Account.Pages.Manage;
 using Treinamento.Procorretor.Data;
 
 namespace Microsoft.AspNetCore.Routing;
