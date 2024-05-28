@@ -1,0 +1,58 @@
+@page "/admin/charts"
+
+@using ChartJs.Blazor.PieChart
+
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveAuto
+
+<PageTitle>Gráficos de Ensino</PageTitle>
+
+<AuthorizeView>
+    Hello @context.User.Identity?.Name!
+    <FluentCard Width="600px" Height="600px">
+        <Chart Config="_pieConfig"></Chart>
+    </FluentCard>
+</AuthorizeView>
+
+@code {
+    private PieConfig _pieConfig;
+
+    protected override void OnInitialized()
+    {
+        ConfigurePieConfig();
+    }
+
+    private void ConfigurePieConfig()
+    {
+        _pieConfig = new PieConfig();
+
+        _pieConfig.Options = new PieOptions
+        {
+            Responsive = true,
+            Title = new OptionsTitle
+            {
+                Display = true,
+                Text = "Gráfico de Visualização do Vídeo."
+            }
+        };
+
+        foreach (var party in new[] {"Party 1", "Party 2", "Party 3"})
+        {
+            _pieConfig.Data.Labels.Add(party);
+        }
+
+        var dataset = new PieDataset<int>(new[] {35, 50, 15})
+        {
+            BackgroundColor = new[]
+            {
+                ColorUtil.ColorHexString(255, 0, 0),
+                ColorUtil.ColorHexString(0, 255, 0),
+                ColorUtil.ColorHexString(0, 0, 255)
+            }
+        };
+
+        _pieConfig.Data.Datasets.Add(dataset);
+    }    
+}
