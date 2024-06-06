@@ -12,3 +12,7 @@ dotnet tool update --global dotnet-ef
 dotnet ef migrations add Init -o Data/Migrations/
 
 dotnet ef database update
+
+Chart links: https://github.com/mariusmuntean/ChartJs.Blazor
+https://youtu.be/h3yaUuI2KZc?si=lCr4ZLPLIhACWDoF
+

@@ -1,6 +1,7 @@
 @page "/admin/charts"
 
 @using ChartJs.Blazor.PieChart
+@using ChartJs.Blazor.BarChart
 
 @using Microsoft.AspNetCore.Authorization
 
@@ -11,17 +12,24 @@
 
 <AuthorizeView>
     Hello @context.User.Identity?.Name!
-    <FluentCard Width="600px" Height="600px">
+    <FluentCard Width="400px" Height="400px">
         <Chart Config="_pieConfig"></Chart>
+    </FluentCard>
+    <FluentCard Width="400px" Height="400px">
+        <Chart Config="_barConfig"></Chart>
     </FluentCard>
 </AuthorizeView>
 
 @code {
     private PieConfig _pieConfig;
+    private const int InitialCount = 7;
+    private BarConfig? _barConfig;
+    private Chart? _chart;
 
     protected override void OnInitialized()
     {
         ConfigurePieConfig();
+        ConfigureBarConfig();
     }
 
     private void ConfigurePieConfig()
@@ -54,5 +62,42 @@
         };
 
         _pieConfig.Data.Datasets.Add(dataset);
-    }    
+    }
+
+    private void ConfigureBarConfig()
+    {
+
+        _barConfig = new BarConfig();
+
+        _barConfig.Options = new BarOptions
+        {
+            Responsive = true,
+            Legend = new Legend
+            {
+                Position = Position.Top  
+            },
+            Title = new OptionsTitle
+            {
+                Display = true,
+                Text = "Gráfico de Visualização do Vídeo."
+            }
+        };
+
+        foreach (var party in new[] {"Party 1", "Party 2", "Party 3"})
+        {
+            _barConfig.Data.Labels.Add(party);
+        }
+
+        var dataset = new BarDataset<int>(new[] {35, 50, 25})
+        {
+            BackgroundColor = new[]
+            {
+                ColorUtil.ColorHexString(255, 0, 0),
+                ColorUtil.ColorHexString(0, 255, 0),
+                ColorUtil.ColorHexString(0, 0, 255)
+            }
+        };
+
+        _barConfig.Data.Datasets.Add(dataset);
+    }
 }
